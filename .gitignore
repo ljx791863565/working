@@ -1,0 +1,8 @@
+*HttpServer/
+*IOS/
+*Linux/
+*muduo/
+*build/
+*.a
+*.so
+*.o
