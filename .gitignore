@@ -3,6 +3,8 @@
 *Linux/
 *muduo/
 *build/
+*C++Primer5th/
+*means
 *.a
 *.so
 *.o
