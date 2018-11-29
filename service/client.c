@@ -1,5 +1,5 @@
 #include "head.h"
-
+int flag;
 void *handler(void *arg)
 {
 	int fd = *((int*)arg);
@@ -11,7 +11,7 @@ void *handler(void *arg)
 		int ret;
 		if ((ret = read(fd, buf, sizeof(buf))) < 0){
 			perror("read");
-			return -1;
+			return ;
 		}
 
 		memset(&msghead, 0, sizeof(msghead));
@@ -72,16 +72,20 @@ int main(int argc, char *argv[])
 	char buf[BUFSIZE];
 
 	while (1){
+		flag = 0;
 		print_menu();
 		scanf("%c", &choose);
 		switch(choose)
 		{
 			case '1':
-				myRegister();
+				myRegister(sockfd);
 				break;
 			case '2':
-				myLogin();
-				break;
+				myLogin(sockfd);
+				while (flag == 0)
+					;
+				if (flag == 1)
+					break;
 			default:
 				{
 					printf("输入有误，请重新输入\n");
@@ -89,4 +93,11 @@ int main(int argc, char *argv[])
 				}
 		}
 	}
+
+	//login secsses 
+	while (1){
+		mySelece(sockfd);
+	}
+	close(sockfd);
+	return 0;
 }
