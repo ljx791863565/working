@@ -1,43 +1,39 @@
 #include "head.h"
 
-void* myworker(void *arg)
+void *myworker(void *arg)
 {
-	MSG_T *p = (MSG_T *)arg;
-	MEGHEAD_T msghead;
-
-	memcpy(&msghead, p->buf, sizeof(msghead));
-	msghead.len = ntohl(msghead.len);
-	msghead.msgtype = ntohl(msghead.msgtype);
-
-	switch(msghead.msgtype){
-		case 1:
-			myRegister(p->fd, p->buf);
+	int *p = (int *)arg;
+	int fd = *p;
+	char buf[BUFSIZE];
+	
+	while (1){
+		memset(&buf, 0, sizeof(buf));
+		fgets(buf, sizeof(buf), stdin);
+		int ret = write(fd, buf, sizeof(buf));
+		printf("server: %s\n", buf);
 	}
 }
+
 int main(int argc, char *argv[])
 {
+	
 	if (argc != 2){
-		printf("参数有误\n");
+		printf("参数有误, ./server port\n");
 		return -1;
 	}
 
-	int epfd;
-	epfd = epoll_create(MAXLISTEN);
-	
-	int sockfd;
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0){
-		perror("socket");
-		return -1;
-	}
 	struct sockaddr_in serverAddr;
-	memset(&serverAddr, 0 ,sizeof(serverAddr));
+	memset(&serverAddr, 0, sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_port = htons(atoi(argv[1]));
 	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-	int ret;
-	ret = bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
+	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sockfd < 0){
+		perror("socket");
+		return -1;
+	}
+	int ret = bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
 	if (ret < 0){
 		perror("bind");
 		return -1;
@@ -49,65 +45,56 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	struct epoll_event ev;
+	struct sockaddr_in clientAddr;
+	memset(&clientAddr, 0, sizeof(clientAddr));
+	socklen_t clientLen = sizeof(clientAddr);
+	int clientFd, readFd, writeFd;
+
+	int epfd;
+	struct epoll_event ev, events[MAXEPOLL];
 	ev.events = EPOLLIN | EPOLLET;
 	ev.data.fd = sockfd;
-	//将sockfd套接字加入到epall监听队列
+
+	epfd = epoll_create(MAXLISTEN);
+
 	epoll_ctl(epfd, EPOLL_CTL_ADD, sockfd, &ev);
+	
+	pool_init(MAX_THREAD_NUM);
 
-	//创建一个监听数组保存通知事件
-	struct epoll_event events[20];
-	int count;		//保存通知事件的个数
-
+	int i, nfds;
 	char buf[BUFSIZE];
-	int i;
-	int clientFd;
-	struct sockaddr_in clientAddr;
-	socklen_t clientLen = sizeof(clientAddr);
-	int readFd;
 
-	MSGHEAD_T msghead;
-
-	//线程池的创建和初始化
-	pool_init(4);
-
-	MSG_T *pmsg;
 	while (1){
-		count = epoll_wait(epfd, events, 20, 500);
-		for (i = 0; i < count; i++){
-			//客户端第一次链接
+		nfds = epoll_wait(epfd, events, MAXEPOLL, MAX_OF_WAIT_TIME);
+		
+		for (i = 0; i < nfds; i++){
 			if (events[i].data.fd == sockfd){
-				clientFd = accept(sockfd, (struct sockaddr*)&clientAddr, &clientLen);
+				clientFd = accept(sockfd, (struct sockaddr *)&clientAddr, &clientLen);
 				if (clientFd < 0){
-					continue;
-				}
-				printf("a new client connect ok %d\n", serverAddr.sin_port);
-
-				ev.events = EPOLLIN | EPOLLET;
-				ev.data.fd = clientFd;
-				epoll_ctl(epfd, EPOLL_CTL_ADD, clientFd, &ev);
-			}
-			//表示管道有数据可以读取
-			else if (events[i].events & EPOLLIN){
-				readFd = events[i].data.fd;
-				memset(buf, 0, sizeof(buf));
-
-				ret = read(readFd, buf, sizeof(buf));
-				if (ret <= 0){
-					continue;
-				}
-				pmsg = (MSG_T *)malloc(sizeof(MSG_T));
-				if (pmsg == NULL){
-					perror("malloc");
+					perror("accept");
 					return -1;
 				}
-				pmsg->fd = readFd;
-				memcpy(pmsg->buf, buf, ret);
-				pool_add_worker(myworker, pmsg);
-
+				printf("accept a new connection from %s\n", inet_addr(clientAddr.sin_addr.s_addr));
+				ev.data.fd = clientFd;
+				ev.events = EPOLLIN | EPOLLET;
+				epoll_ctl(epfd, EPOLL_CTL_ADD, clientFd, &ev);	//将新的fd添加到监听队列中去
+			}else if (events[i].events & EPOLLIN){
+				memset(&buf, 0, sizeof(buf));
+				readFd = events[i].data.fd;
+				ret = read(readFd, buf, sizeof(buf));
+				if (ret < 0){
+					perror("readFd");
+					close(readFd);
+					return -1;
+				}
+				printf("client  : %s\n", buf);
+			}else if (events[i].events & EPOLLOUT){
+				writeFd = events[i].data.fd;
+				pool_add_worker(myworker, &writeFd);
 			}
-
 		}
 	}
+	close(epfd);
+	close(sockfd);
 	return 0;
 }

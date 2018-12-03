@@ -19,7 +19,7 @@
 #define MAXLISTEN 100	//描述符的最大监听数
 #define MAXEPOLL 20
 #define MAX_OF_WAIT_TIME 500 //监听最大阻塞时间
-
+#define MAX_THREAD_NUM  4//线程池线程数
 typedef struct msghead
 {
 	int len;		//消息头长度
