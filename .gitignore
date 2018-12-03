@@ -5,6 +5,7 @@
 *build/
 *C++Primer5th/
 *means
+*a.out
 *.a
 *.so
 *.o
