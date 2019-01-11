@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <iostream>
 typedef int Rank;
 #define DEFAULT_CAPACITY 3
 template <typename T>
@@ -26,7 +27,7 @@ protected:
 	void quickSort(Rank lo, Rank hi);			//快速排序
 	void heapSort(Rank lo, Rank hi);			//堆排序
 public:
-	Vector(int c = DEFAULT_CAPACITY, int size = s; T v = 0)
+	Vector(int c, int size , T v = 0)
 	{
 		_capacity = c;
 		_elem = new T[_capacity];
@@ -120,7 +121,7 @@ public:
 	int uniquify();			//有序向量去除重复元素
 
 	//便历
-	void traverse(void (*)T&);		//遍历。 传入函数指针，只读或局部修改属性
+	void traverse(void (*)(T&));		//遍历。 传入函数指针，只读或局部修改属性
 	template <typename VST>
 	void traverse(VST &);			//遍历。使用函数对象，可全局修改属性
 };

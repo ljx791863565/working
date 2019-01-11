@@ -11,7 +11,7 @@ void Vector<T>::copyFrom(T const *A, Rank lo, Rank hi)
 }
 
 template <typename T>
-Vector<T>& Vector<T>:: operator=(Vector<T> const T& v)
+Vector<T>& Vector<T>:: operator=(Vector<T> const &v)
 {
 	if (_elem){
 		delete []_elem;
@@ -61,7 +61,7 @@ void Vector<T>::shrink()
 	delete [] oldelem;
 }
 
-template <typename>
+template <typename T>
 T& Vector<T>::operator[](Rank r) const
 {
 	assert(r >= 0 && r < _size);
@@ -181,7 +181,7 @@ int Vector<T>::disordered() const
 {
 	int n = 0;
 	for (int i = 1; i < _size; i++){
-		if (_elem[i-1] > elem[i]){
+		if (_elem[i-1] > _elem[i]){
 			n++;
 		}
 		return n;
