@@ -19,7 +19,7 @@ struct ListNode
 
 	}
 	ListNode(T e, ListNodePosi(T) p = NULL, ListNodePosi(T) s = NULL)
-		: data(e), succ(s), pred(p)
+		: data(e), pred(p), succ(s)
 	{
 
 	}
