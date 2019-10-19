@@ -1,2 +1,0 @@
-Wed Jan  2 12:02:35 2019
-function ( main ) line 8: this is the log system test
